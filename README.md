@@ -134,8 +134,9 @@ as a parameter:
 - [Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) this repository into your own GitHub account.
 - Clone your new repository onto your local machine.
 - Run `npm install` from the project root to install dependencies.
-- Create a [Global API Key](https://dash.cloudflare.com/profile/api-tokens) on Cloudflare.
-- Run `gh secret set CLOUDFLARE_API_KEY` to set your Cloudflare API key as a secret on GitHub.
+- Create an [API Token](https://dash.cloudflare.com/profile/api-tokens) on Cloudflare using the `Cloudflare Workers` 
+  template.
+- Run `gh secret set CLOUDFLARE_API_TOKEN` to set your Cloudflare API key as a secret on GitHub.
 - Run `wrangler whoami` to get your Cloudflare Account ID.
 - Run `gh secret set CLOUDFLARE_ACCOUNT_ID` to set your Cloudflare Account ID as a secret on GitHub.
 - Run `gh secret set GH_USER` to set your GitHub user as a secret on GitHub.
