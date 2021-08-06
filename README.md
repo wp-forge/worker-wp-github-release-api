@@ -6,7 +6,7 @@ All data is fetched from GitHub directly and makes a few assumptions:
 
 - Your WordPress plugin or theme lives in a public or private GitHub repository.
 - You've created at least one [release](https://docs.github.com/en/github/administering-a-repository/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release) on GitHub.
-- Your releases contain an `.zip` file as an artifact that is used for the plugin or theme installation.
+- Your releases contain a `.zip` artifact that is used for the plugin or theme installation.
 
 ## Prerequisites
 
