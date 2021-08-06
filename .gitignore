@@ -1,0 +1,11 @@
+/target
+/dist
+bin/
+node_modules/
+pkg/
+worker/
+.cargo-ok
+**/*.rs.bk
+Cargo.lock
+*.log
+wrangler.toml

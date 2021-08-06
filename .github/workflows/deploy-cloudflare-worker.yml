@@ -1,0 +1,36 @@
+name: Deploy Cloudflare Worker
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Create wrangler.toml
+        run: mv wrangler.example.toml wrangler.toml
+
+      - name: Set account ID
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          file: wrangler.toml
+          key: account_id
+          value: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Set GITHUB_USER
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          file: wrangler.toml
+          key: vars.GITHUB_USER
+          value: ${{ secrets.GH_USER }}
+
+      - name: Publish
+        uses: cloudflare/wrangler-action@1.3.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_KEY }}

@@ -1,0 +1,15 @@
+{
+  "name": "wp-github-release-api",
+  "description": "Converts the GitHub release API into a WordPress compatible plugin/theme update API accessible via Cloudflare Workers.",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write '**/*.{js,css,json,md}'"
+  },
+  "author": "Micah Wood",
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "^2.3.2"
+  }
+}
