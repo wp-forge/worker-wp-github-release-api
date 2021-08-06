@@ -201,3 +201,8 @@ The example above would result in the following plugin basename: `shortcode-scru
 Any push to the `master` branch on your GitHub repo will trigger the `.github/workflows/deploy-cloudflare-worker.yml` 
 workflow via GitHub Actions and deploy your Worker to Cloudflare automatically. If you use a different default branch, 
 such as `main`, simply update the `deploy-cloudflare-worker.yml` file to reflect the correct branch name.
+
+## Additional Notes
+
+- If certain bits of data are missing from the response, it could be that you haven't added all of the necessary 
+  file headers.
