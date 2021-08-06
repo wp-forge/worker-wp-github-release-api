@@ -38,30 +38,48 @@ Once installed, you should be able to access the API at `https://wp-github-relea
 If you prefer to have the API live on a custom domain, follow the steps on setting up a [custom route](https://developers.cloudflare.com/workers/platform/routes) for your 
 Cloudflare Worker.
 
-Requests to the API use the following pattern: `/:entity/:vendor:/:package/[download]`.
+Requests to the API use the following pattern: `/:entity/:vendor:/:package/[:version]/[download]`.
 
+**Plugin Requests**
 ```shell
-# Plugin data request
+# Get plugin info for latest version
 /plugins/:vendor/:package
 
-# Plugin download request
+# Get plugin data for specific version
+/plugins/:vendor/:package/:version
+
+# Download latest plugin version
 /plugins/:vendor/:package/download
 
-# Theme data request
+# Download specific plugin version
+/plugins/:vendor/:package/:version/download
+```
+
+**Theme Requests**
+```shell
+# Get theme info for latest version
 /themes/:vendor/:package
 
-# Theme download request
+# Get theme data for specific version
+/themes/:vendor/:package/:version
+
+# Download latest theme version
 /themes/:vendor/:package/download
+
+# Download specific theme version
+/themes/:vendor/:package/:version/download
 ```
 
 Required path parameters:
 
-- **entity** - The entity type. Can be either `plugins` or `themes`.
+- **entity** - The entity type. Can be either `plugin`, `plugins`, `theme` or `themes`.
 - **vendor** - This is the GitHub username or organization name where the repository is located.
 - **package** - This is the slug of the GitHub repository name.
 
 Optional path parameters:
 
+- **version** - The plugin or theme version number. When absent, the latest version will be returned. When present, 
+  the requested version will be returned.
 - **download** - When appended to the URL path, this will trigger a download of the plugin or theme `.zip` file.
 
 Optional query parameters:
@@ -71,13 +89,15 @@ Optional query parameters:
 - **file** - The file containing the WordPress plugin headers. Only required for plugin requests, this allows you to 
   override the main plugin file name if it doesn't match the expected pattern: `{package}.php`.
 
-All examples below will are relative paths. You must prepend `https://` and your domain name.
-
-### Plugin Request
+### Plugin Request Example
 
 #### Request
-```text
+```shell
 /plugins/wpscholar-wp-plugins/shortcode-scrubber
+
+# OR
+
+/plugins/wpscholar-wp-plugins/shortcode-scrubber/1.0.3
 ```
 
 In this scenario, the plugin basename is assumed to be `shortcode-scrubber/shortcode-scrubber.php`. This is derived 
@@ -116,11 +136,15 @@ The example above would result in the following plugin basename: `shortcode-scru
 }
 ```
 
-### Theme Request
+### Theme Request Example
 
 #### Request
-```text
+```shell
 /themes/wpscholar/block-theme
+
+# OR
+
+/themes/wpscholar/block-theme/1.0
 ```
 
 #### Response

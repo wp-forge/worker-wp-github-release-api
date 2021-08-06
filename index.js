@@ -25,6 +25,7 @@ async function handleRequest(event) {
 	// Get the data from the request
 	const data = getDataFromRequest(request);
 
+	// Run some error checks
 	if (data.type !== 'theme' && data.type !== 'plugin') {
 		return getErrorResponse("The first URL path segment is missing a valid entity type. Must be either 'plugins' or 'themes'.");
 	}
@@ -37,33 +38,12 @@ async function handleRequest(event) {
 		return getErrorResponse('The third URL path segment is missing. It should contain the package name.');
 	}
 
-	response = await gitHubRequest(
-		`https://api.github.com/repos/${ data.vendor }/${ data.package }/releases`
-	);
-
-	let releases = await response.json();
-
-	// Proxy error response
-	if (response.status !== 200) {
-		return getResponse(releases, response.status);
-	}
-
-	// Return 404 if a release isn't found
-	if (!releases || !Array.isArray(releases) || !releases.length) {
-		return getResponse('No releases available!', 404);
-	}
-
-	// Skip over releases without release assets.
-	for (release of releases) {
-		if (release.assets.length) {
-			data.release = release;
-			break;
-		}
-	}
-
-	// Return 404 if no release asset is found.
-	if (!data?.release?.assets?.length) {
-		return getResponse('No release asset found!', 404);
+	// Get the release
+	try {
+		data.latestRelease = await getLatestRelease(data);
+		data.release = data.version ? await getRelease(data) : data.latestRelease;
+	} catch (e) {
+		return getErrorResponse(e.message, 404);
 	}
 
 	const filePath = `https://raw.githubusercontent.com/${ data.vendor }/${ data.package }/${ data.release.tag_name }/${ data.file }`;
@@ -109,25 +89,53 @@ function getDataFromRequest(request) {
 	const url = new URL(request.url);
 	const segments = url.pathname.split('/').filter((value) => !!value);
 
-	const type = segments[0] ? segments[0].slice(0, -1) : null;
-	const vendor = segments[1] ? segments[1] : null;
-	const _package = segments[2] ? segments[2] : null;
-	const isDownload = !!(segments[3] && 'download' === segments[3]) || url.searchParams.has('download');
+	// Set entity type
+	let type = segments.shift();
 
+	if (type && (type === 'plugin' || type === 'plugins')) {
+		type = 'plugin';
+	}
+
+	if (type && (type === 'theme' || type === 'themes')) {
+		type = 'theme';
+	}
+
+	// Set vendor name
+	const vendor = segments.shift();
+
+	// Set package name
+	const _package = segments.shift();
+
+	// Check if we should download
+	let isDownload = segments.includes('download');
+	if (isDownload) {
+		segments.pop(); // Remove segment so we don't accidentally grab it in the next step
+	}
+
+	// Set version, if provided
+	let version = segments.shift();
+
+	// Set slug
 	const slug = url.searchParams.get('slug') || _package;
+
+	// Set file
 	const file = url.searchParams.get('file') || (type === 'theme' ? 'style.css' : `${ _package }.php`);
 
+	// Set basename
 	const basename = `${ slug }/${ file }`;
 
-	return {
-		type,
-		vendor,
+	const data = {
+		basename,
+		file,
+		isDownload,
 		package: _package, // Package is a reserved keyword in JavaScript
 		slug,
-		file,
-		basename,
-		isDownload
+		type,
+		vendor,
+		version
 	};
+
+	return data;
 }
 
 /**
@@ -141,7 +149,10 @@ function getPayload(data) {
 	const payload = {
 		name: data.type === 'theme' ? data.fileHeaders['Theme Name'] : data.fileHeaders['Plugin Name'],
 		type: data.type,
-		version: data.fileHeaders['Version'] || '',
+		version: {
+			current: data.fileHeaders['Version'],
+			latest: data.latestRelease.tag_name
+		},
 		description: data.fileHeaders['Description'] || '',
 		author: {
 			name: data.fileHeaders['Author'] || '',
@@ -165,6 +176,75 @@ function getPayload(data) {
 	}
 
 	return payload;
+}
+
+/**
+ * Get the latest viable release.
+ *
+ * @param data {{}}
+ *
+ * @returns {Promise<*>}
+ */
+async function getLatestRelease(data) {
+	let release, releases, response;
+
+	// Fetch the most recent releases from GitHub
+	response = await gitHubRequest(
+		`https://api.github.com/repos/${ data.vendor }/${ data.package }/releases`
+	);
+	releases = await response.json();
+
+	// Proxy error response
+	if (response.status !== 200) {
+		throw releases;
+	}
+
+	if (!releases || !Array.isArray(releases) || !releases.length) {
+		throw 'No releases available!';
+	}
+
+	// Skip over releases without release assets.
+	for (release of releases) {
+		if (release.assets.length) {
+			break;
+		}
+	}
+
+	if (!release) {
+		throw 'No releases have release assets!'
+	}
+
+	return release;
+}
+
+/**
+ * Get a specific plugin or theme release.
+ *
+ * @param data {{}}
+ *
+ * @returns {Promise<*>}
+ */
+async function getRelease(data) {
+
+	let release, releases, response;
+
+	// Fetch a specific release from GitHub
+	response = await gitHubRequest(
+		`https://api.github.com/repos/${ data.vendor }/${ data.package }/releases/tags/${ data.version }`
+	);
+	release = await response.json();
+
+	// Proxy error response
+	if (response.status !== 200) {
+		throw release;
+	}
+
+	// Release doesn't have a downloadable
+	if (!release.assets.length) {
+		throw `Release ${ data.version } doesn't have a release asset!`
+	}
+
+	return release;
 }
 
 /**
