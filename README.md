@@ -28,6 +28,9 @@ All data is fetched from GitHub directly and makes a few assumptions:
   check the `repo` permissions).
 - Run `wrangler secret put GITHUB_TOKEN` to set your GitHub token as an environmental secret on Cloudflare.
 
+If you want to configure a custom route via the `wrangler.toml` file, you will need to provide your Cloudflare Zone 
+ID as `zone_id` in the `wrangler.toml` file.
+
 ## Usage
 
 Once installed, you should be able to access the API at `https://wp-github-release-api.<your-subdomain>.workers.dev`.
@@ -136,6 +139,7 @@ as a parameter:
 - Run `wrangler whoami` to get your Cloudflare Account ID.
 - Run `gh secret set CLOUDFLARE_ACCOUNT_ID` to set your Cloudflare Account ID as a secret on GitHub.
 - Run `gh secret set GH_USER` to set your GitHub user as a secret on GitHub.
+- Optionally, set your Cloudflare Zone ID by running `gh secret set CLOUDFLARE_ZONE_ID`.
 - Run `wrangler publish` to deploy the Worker to Cloudflare. This must be done once initially so that the secret we 
   set next has an existing Worker to be applied to.
 - Create a [personal access token](https://github.com/settings/tokens) on GitHub (don't set an expiration and only 

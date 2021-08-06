@@ -23,6 +23,16 @@ jobs:
           key: account_id
           value: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Set zone ID
+        uses: ciiiii/toml-editor@1.0.0
+        env:
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        if: env.CLOUDFLARE_ZONE_ID != null
+        with:
+          file: wrangler.toml
+          key: zone_id
+          value: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+
       - name: Set GITHUB_USER
         uses: ciiiii/toml-editor@1.0.0
         with:
