@@ -25,12 +25,16 @@ async function handleRequest(event) {
 	// Get the data from the request
 	const data = getDataFromRequest(request);
 
+	if (data.type !== 'theme' && data.type !== 'plugin') {
+		return getErrorResponse("The first URL path segment is missing a valid entity type. Must be either 'plugins' or 'themes'.");
+	}
+
 	if (!data.vendor) {
-		return getErrorResponse('Missing URL param: vendor');
+		return getErrorResponse('The second URL path segment is missing. It should contain the vendor name.');
 	}
 
 	if (!data.package) {
-		return getErrorResponse('Missing URL param: package');
+		return getErrorResponse('The third URL path segment is missing. It should contain the package name.');
 	}
 
 	response = await gitHubRequest(
@@ -73,8 +77,16 @@ async function handleRequest(event) {
 	// Get file headers
 	data.fileHeaders = getFileHeaders(await response.text());
 
+	// Get payload
+	const payload = getPayload(data);
+
+	// Force a download
+	if (data.isDownload) {
+		return Response.redirect(payload.download, 301);
+	}
+
 	// Prepare response
-	response = getResponse(getPayload(data));
+	response = getResponse(payload);
 
 	// Set cache header
 	response.headers.append('Cache-Control', 's=maxage=10');
@@ -95,25 +107,27 @@ async function handleRequest(event) {
 function getDataFromRequest(request) {
 
 	const url = new URL(request.url);
+	const segments = url.pathname.split('/').filter((value) => !!value);
 
-	const data = {
-		vendor: url.searchParams.get('vendor'),
-		package: url.searchParams.get('package'),
+	const type = segments[0] ? segments[0].slice(0, -1) : null;
+	const vendor = segments[1] ? segments[1] : null;
+	const _package = segments[2] ? segments[2] : null;
+	const isDownload = !!(segments[3] && 'download' === segments[3]) || url.searchParams.has('download');
+
+	const slug = url.searchParams.get('slug') || _package;
+	const file = url.searchParams.get('file') || (type === 'theme' ? 'style.css' : `${ _package }.php`);
+
+	const basename = `${ slug }/${ file }`;
+
+	return {
+		type,
+		vendor,
+		package: _package, // Package is a reserved keyword in JavaScript
+		slug,
+		file,
+		basename,
+		isDownload
 	};
-
-	data.basename = url.searchParams.get('basename') || `${ data.package }/${ data.package }.php`;
-
-	const [slug, file] = data.basename.split('/');
-
-	data.slug = slug;
-	data.file = file;
-
-	data.type = data.file.substring(data.file.lastIndexOf('.') + 1) === 'css' ? 'theme' : 'plugin';
-
-	data.isTheme = 'theme' === data.type;
-	data.isPlugin = 'plugin' === data.type;
-
-	return data;
 }
 
 /**
@@ -124,35 +138,31 @@ function getDataFromRequest(request) {
  */
 function getPayload(data) {
 
-	const payload = {};
+	const payload = {
+		name: data.type === 'theme' ? data.fileHeaders['Theme Name'] : data.fileHeaders['Plugin Name'],
+		type: data.type,
+		version: data.fileHeaders['Version'] || '',
+		description: data.fileHeaders['Description'] || '',
+		author: {
+			name: data.fileHeaders['Author'] || '',
+			url: data.fileHeaders['Author URI'] || ''
+		},
+		updated: data.release.published_at || '',
+		requires: {
+			wp: data.fileHeaders['Requires at least'] || '',
+			php: data.fileHeaders['Requires PHP'] || '',
+		},
+		tested: {
+			wp: data.fileHeaders['Tested up to'] || ''
+		},
+		url: (data.type === 'theme' ? data.fileHeaders['Theme URI'] : data.fileHeaders['Plugin URI']) || '',
+		download: data.release.assets[0].browser_download_url,
+		slug: data.slug
+	};
 
-	payload.name = data.isTheme ? data.fileHeaders['Theme Name'] : data.fileHeaders['Plugin Name'];
-	payload.type = data.type;
-
-	payload.version = data.fileHeaders['Version'] || '';
-	payload.description = data.fileHeaders['Description'] || '';
-
-	payload.author = {};
-	payload.author.name = data.fileHeaders['Author'] || '';
-	payload.author.url = data.fileHeaders['Author URI'] || '';
-
-	payload.updated = data.release.published_at || '';
-
-	payload.slug = data.slug;
-
-	if (data.isPlugin) {
+	if (data.type === 'plugin') {
 		payload.basename = data.basename;
 	}
-
-	payload.url = data.isTheme ? data.fileHeaders['Theme URI'] : data.fileHeaders['Plugin URI'];
-	payload.download = data.release.assets[0].browser_download_url;
-
-	payload.requires = {};
-	payload.requires.wp = data.fileHeaders['Requires at least'] || '';
-	payload.requires.php = data.fileHeaders['Requires PHP'] || '';
-
-	payload.tested = {};
-	payload.tested.wp = data.fileHeaders['Tested up to'] || '';
 
 	return payload;
 }

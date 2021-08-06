@@ -38,36 +38,57 @@ Once installed, you should be able to access the API at `https://wp-github-relea
 If you prefer to have the API live on a custom domain, follow the steps on setting up a [custom route](https://developers.cloudflare.com/workers/platform/routes) for your 
 Cloudflare Worker.
 
-There are two required URL parameters for the API to work:
+Requests to the API use the following pattern: `/:entity/:vendor:/:package/[download]`.
 
+```shell
+# Plugin data request
+/plugins/:vendor/:package
+
+# Plugin download request
+/plugins/:vendor/:package/download
+
+# Theme data request
+/themes/:vendor/:package
+
+# Theme download request
+/themes/:vendor/:package/download
+```
+
+Required path parameters:
+
+- **entity** - The entity type. Can be either `plugins` or `themes`.
 - **vendor** - This is the GitHub username or organization name where the repository is located.
 - **package** - This is the slug of the GitHub repository name.
 
-There is one optional URL parameter:
+Optional path parameters:
 
-- **basename** - This is the WordPress plugin basename OR the path to the `style.css` file of a theme relative to 
-  the `wp-content/themes/` directory.
+- **download** - When appended to the URL path, this will trigger a download of the plugin or theme `.zip` file.
 
-_All examples below will ONLY show the query string for the request and are NOT URI encoded for readability purposes. 
-As a best practice, you should URI encode your query parameter values. For the examples below, this means simply 
-replacing the `/` character with `%2F`._
+Optional query parameters:
+
+- **slug** - The folder name of the plugin or theme. Allows you to override your plugin or theme slug if it is 
+  different from the package name.
+- **file** - The file containing the WordPress plugin headers. Only required for plugin requests, this allows you to 
+  override the main plugin file name if it doesn't match the expected pattern: `{package}.php`.
+
+All examples below will are relative paths. You must prepend `https://` and your domain name.
 
 ### Plugin Request
 
 #### Request
 ```text
-?vendor=wpscholar-wp-plugins&package=shortcode-scrubber
+/plugins/wpscholar-wp-plugins/shortcode-scrubber
 ```
 
-In this scenario, the plugin basename is assumed to be `shortcode-scrubber/shortcode-scrubber.php`. 
-
-If the `basename` can't be derived from the `package` (i.e. `<package>/<package>.php`), then you must provide 
-`basename` 
-as a parameter:
+In this scenario, the plugin basename is assumed to be `shortcode-scrubber/shortcode-scrubber.php`. This is derived 
+from the provided `slug` and `file` query parameters, if provided. Otherwise, the slug is assumed to match the 
+`package` name and the `file` is assumed to match the `{package}.php` pattern.
 
 ```text
-?vendor=wpscholar-wp-plugins&package=shortcode-scrubber&basename=shortcode-scrubber/scrubber.php
+/plugins/wpscholar-wp-plugins/shortcode-scrubber?slug=shortcode-scrubber-pro&file=scrubber.php
 ```
+
+The example above would result in the following plugin basename: `shortcode-scrubber-pro/scrubber.php`. 
 
 #### Response
 ```json
@@ -99,7 +120,7 @@ as a parameter:
 
 #### Request
 ```text
-?vendor=wpscholar&package=block-theme&basename=block-theme/style.css
+/themes/wpscholar/block-theme
 ```
 
 #### Response
