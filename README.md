@@ -115,7 +115,10 @@ The example above would result in the following plugin basename: `shortcode-scru
 {
   "name": "Shortcode Scrubber",
   "type": "plugin",
-  "version": "1.0.3",
+  "version": {
+    "current": "1.0.3",
+    "latest": "1.0.3"
+  },
   "description": "A powerful tool for cleaning up shortcodes on your site and confidently managing plugins and themes that use shortcodes.",
   "author": {
     "name": "Micah Wood",
@@ -152,7 +155,10 @@ The example above would result in the following plugin basename: `shortcode-scru
 {
   "name": "Block Theme",
   "type": "theme",
-  "version": "1.0",
+  "version": {
+    "current": "1.0",
+    "latest": "1.0"
+  },
   "description": "A block theme experiment",
   "author": {
     "name": "Micah Wood",
